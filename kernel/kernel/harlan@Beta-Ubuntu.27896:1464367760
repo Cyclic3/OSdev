@@ -1,0 +1,158 @@
+#include <stddef.h>
+#include <stdint.h>
+#include <string.h>
+#include <stdio.h>
+
+#include <kernel/tty.h>
+
+#include <kernel/vga.h>
+
+#include <kernel/io.h>
+
+char * itoa( int value, char * str, int base )
+{
+    char * rc;
+    char * ptr;
+    char * low;
+    // Check for supported base.
+    if ( base < 2 || base > 36 )
+    {
+        *str = '\0';
+        return str;
+    }
+    rc = ptr = str;
+    // Set '-' for negative decimals.
+    if ( value < 0 && base == 10 )
+    {
+        *ptr++ = '-';
+    }
+    // Remember where the numbers start.
+    low = ptr;
+    // The actual conversion.
+    do
+    {
+        // Modulo is negative for negative value. This trick makes abs() unnecessary.
+        *ptr++ = "zyxwvutsrqponmlkjihgfedcba9876543210123456789abcdefghijklmnopqrstuvwxyz"[35 + value % base];
+        value /= base;
+    } while ( value );
+    // Terminating the string.
+    *ptr-- = '\0';
+    // Invert the numbers.
+    while ( low < ptr )
+    {
+        char tmp = *low;
+        *low++ = *ptr;
+        *ptr-- = tmp;
+    }
+    return rc;
+}
+void halt(){asm volatile ("hlt");}
+
+void kernel_early(void)
+{
+    outb(0x3D4, 0x0F);
+    outb(0x3D5, 0xFFFF);
+    outb(0x3D4, 0x0E);
+    outb(0x3D5, (unsigned char )((0xFFFF>>8)&0xFF));
+    terminal_initialise();
+}
+
+/*
+void wait(int s){
+x		outb(0x70,0x00);
+		while(inb(0x71)==0){}
+		char now = inb(0x71);
+		char then = now + s;
+		while(inb(0x71)<then){}
+}
+*/
+void PROTECTED_MODE()
+{
+    //char GDT[];
+    return;
+}
+char* pad_num(char* v){
+	if(strlen(v)==1) {char* dest = "00"; memcpy(dest+1,v,1); return dest;} else {return v;}
+	
+}
+struct div_t{
+  int quot;
+  int rem;
+};
+struct div_t div (int a, int b)
+{
+    struct div_t c = {.quot = a/b,.rem = a%b};
+    return c;
+}
+struct time{
+    char hours;
+    char minutes;
+    char seconds;
+};
+struct time get_time(){
+    struct time t;
+    char s = ask_cmos(0x00);
+	char m = ask_cmos(0x02);
+	char h = ask_cmos(0x04);
+    s = (s & 0x0F)+(s/16)*10;
+    m = (m & 0x0F) + ((m / 16) * 10);
+    h = ((h & 0x0F) + (((h & 0x70) / 16) * 10) ) | (h & 0x80);
+    t.hours = h;
+    t.minutes = m;
+    t.seconds = s;
+    return t;
+}
+struct time add_time(struct time a, struct time b){
+    struct time c;
+    struct div_t ss = div(a.seconds+b.seconds,60);
+    c.seconds = ss.rem;
+    struct div_t mm = div(a.minutes+b.minutes,60);
+
+    c.minutes = mm.rem+ss.quot;
+    struct div_t hh = div(a.hours+b.hours,24);
+    c.hours = hh.rem + mm.quot;
+    
+    return c;
+}
+void print_time(struct time now)
+{
+    char* hh;
+	printf(pad_num(itoa(now.hours,hh,10)));
+	printf(":");
+	char* mm;
+	printf(pad_num(itoa(now.minutes,mm,10)));
+	printf(":");
+	char* ss;
+	printf(pad_num(itoa(now.seconds,ss,10)));
+}
+char equal_time(struct time a, struct time b)
+{
+    return (a.seconds==b.seconds)&(a.minutes==b.minutes)&(a.hours==b.hours);
+}
+void kernel_main(void)
+{
+	char* v;
+	puts("CLOCKOS");
+    struct time init = get_time();
+    struct time add = {.seconds=5};
+    struct time stop = add_time(init,add);
+    printf("Halting at: ");
+    print_time(stop);
+    printf("\n");
+    char s = ask_cmos(0x00);
+	while(1){
+		//terminal_initialize();        
+        s = ask_cmos(0x00);
+		clearline();
+        struct time now = get_time();
+        print_time(now);
+        if (equal_time(now,stop)) break;
+		while(ask_cmos(0x00)==s);
+	}
+    terminal_initialise();
+    puts("GOING DOWN NOW!");
+    halt();
+	puts(itoa(readcode(),v,16));
+	puts(itoa(readcode(),v,16));
+	//while(1){char vv = ; if(vv!=x){io_wait();terminal_putchar(scancode[vv]);}}//printf(" ");puts(itoa(vv,v));};}x=vv	
+}

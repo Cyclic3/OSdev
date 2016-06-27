@@ -1,0 +1,11 @@
+#ifndef IO_KERN
+#define IO_KERN
+#include <stddef.h>
+#include <stdint.h>
+char scancode[256];
+void outb(uint16_t port, uint8_t val);
+uint8_t inb(uint16_t port);
+char getScancode(void);
+char ask_cmos(char reg);
+void reboot (void);
+#endif
