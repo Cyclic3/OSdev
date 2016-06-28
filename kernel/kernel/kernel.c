@@ -313,12 +313,12 @@ uint32_t crc32(uint32_t crc, const char *buf, size_t len)
 }
 typedef struct __attribute__((packed))
 {
-	unsigned long long sig;
+    unsigned long long sig;
     unsigned char rev[4];
     unsigned int size;
     unsigned int crc;
     unsigned int rsvd1;
-	unsigned long long this;
+    unsigned long long this;
     unsigned long long backup;
     unsigned long long first;
     unsigned long long last;
@@ -343,6 +343,27 @@ typedef struct __attribute__((packed))
     unsigned char specific[3];
     unsigned char name[72];
 } GPT_PART;
+typedef struct __attribute__((packed))
+{
+    unsigned char sector:6;
+    unsigned short cylinder:10;
+    unsigned char head;
+} CHS;
+#define BAD_CHS {.cylinder = 1023, .head=255, .sector = 63}
+typedef struct __attribute__((packed))
+{
+    unsigned char status;
+    CHS start;
+    unsigned char type;
+    CHS end;
+    unsigned int LBA;
+    unsigned int sectors;
+} MBR_PART;
+typedef struct __attribute__((packed))
+{
+    unsigned char bootstrap[446];
+    MBR_PART parts[4];
+} MBR_HEAD;
 #define EFI_SIG 0x5452415020494645
 
 GPT_HEAD test =
@@ -374,6 +395,7 @@ void gen_part_crc(GPT_HEAD * h, char * p)
     h->part_crc = crc32(0,p,h->part_num);
 }
 GPT_PART test3[80];
+MBR_HEAD test4 = {.parts = {{.status = 0x00, .type = 0xEE, .LBA = 1}}};
 void kernel_main(void)
 {
     gen_crc(&test);
