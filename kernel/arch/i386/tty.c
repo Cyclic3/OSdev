@@ -32,6 +32,7 @@ void terminal_setcolor(uint8_t color)
 {
 	terminal_color = color;
 }
+size_t cursor_back_limit = 0;
 size_t cursor_pos = 0;
 void cursor_to(int index)
 {
@@ -43,7 +44,7 @@ void cursor_to(int index)
 }
 void cursor_update()
 {
-  const size_t index = terminal_row * VGA_WIDTH + terminal_column;
+  const size_t index = terminal_row * VGA_WIDTH + terminal_column + 1;
   outb(0x3D4, 0x0F);
   outb(0x3D5, index);
   outb(0x3D4, 0x0E);
@@ -53,7 +54,7 @@ void cursor_update()
 void terminal_putentryat(char c, uint8_t color, size_t x, size_t y)
 {
 	const size_t index = y * VGA_WIDTH + x;
-        cursor_to(index);
+        cursor_to(index+1);
 	terminal_buffer[index] = make_vgaentry(c, color);
 }
 
@@ -76,7 +77,16 @@ void terminal_putchar(char c)
 
 	if (c=='\n'){terminal_column = 0;terminal_row = terminal_row + 1;return cursor_update();}
 	if (c=='\t'){terminal_column = ((terminal_column+4)/4)*4; return cursor_update();}
-	if (c=='\b'){terminal_putentryat(' ',terminal_color, --terminal_column, terminal_row);return cursor_update();}
+	if (c=='\b')
+	{
+	  if (cursor_pos > cursor_back_limit)
+	  {
+	    terminal_putentryat(' ',terminal_color, --terminal_column, terminal_row);
+	    cursor_to(cursor_pos-1);
+	    return;
+	  }
+	  else return;
+	}
 	terminal_putentryat(c, terminal_color, terminal_column, terminal_row);
 	++terminal_column;
 	
@@ -100,11 +110,27 @@ void clearline()
 	for (int i = 0; i < 80; i++){terminal_putentryat(' ', terminal_color, i, terminal_row);}
 }
 void writeline(char* v) {terminal_writestring(v);}
-char readcode() {return getScancode();}
-char readchar() {return scancode[readcode()];}
-char* readline(char* acc,char echo)
+Scancode readcode() {return getScancode();}
+char readchar()
 {
-	int pos = 0;
-	while (pos < 256) {char v = readchar(); if (echo) {terminal_putchar(v);}; if (v=='\n'){acc[pos]='\0';return acc;};if (v=='\b') {acc[--pos]='\0';} acc[pos++] = v;}
-	return acc;
+  Scancode s = readcode();
+  if (s.Shift)
+  {return scancode_shift[s.code];}
+  else
+  {return scancode[s.code];}
+}
+char* readline(char* acc,char echo, int n)
+{
+  cursor_back_limit = cursor_pos;
+  int pos = 0;
+  while (pos < n)
+  {
+    char v = readchar();
+    if (echo) {terminal_putchar(v);};
+    if (v=='\n'){acc[pos]='\0';return acc;};
+    if (v=='\b' && cursor_pos > cursor_back_limit ) {acc[pos--]='\0';}
+    else acc[pos++] = v;
+    n--;
+  }
+  return acc;
 }

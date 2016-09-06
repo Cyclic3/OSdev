@@ -32,9 +32,8 @@ char* itoa(int num, char* str, int base)
         str[i++] = '-';
  
     str[i] = '\0'; // Append string terminator
- 
+    
     // Reverse the string
     reverse(str);
- 
     return str;
 }
