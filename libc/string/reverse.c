@@ -2,7 +2,6 @@
 /* reverse:  reverse string s in place */
 void reverse(char s[])
 {
-    puts("!");
     int i, j;
     char c;
     for (i = 0, j = strlen(s)-1; i<j; i++, j--) {

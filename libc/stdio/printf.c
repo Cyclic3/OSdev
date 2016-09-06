@@ -61,17 +61,20 @@ int printf(const char* restrict format, ...)
                 {
 			format++;
 			char s[11];
-            memset(s,0,11);
+			memset(s,0,11);
 			int n = va_arg(parameters, int);
-            itoa(n,s,10);
+			itoa(n,s,10);
 			print(s,strlen(s));
                 }
 		else if ( *format == 'x' )
                 {
 			format++;
-			char s[9] = {0,0,0,0,0,0,0,0,0};
-			int n = va_arg(parameters, int);
-            itoa(n,s,16);
+			char s[11];
+			memset(s,0,11);
+			
+			int n = va_arg(parameters, unsigned int);
+			
+			itoa(n,s,16);
 			print(s,strlen(s));
                 }
 		else

@@ -16,6 +16,8 @@ void* memset(void*, int, size_t);
 size_t strlen(const char*);
 void reverse(char * s);
 char* itoa(int num, char* str, int base);
+int strcmp(char *lhs, char *rhs);
+int strncmp(char *lhs, char *rhs,size_t n);
 #ifdef __cplusplus
 }
 #endif

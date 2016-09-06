@@ -1,7 +1,8 @@
 # Declare constants used for creating a multiboot header.
 .set ALIGN,    1<<0             # align loaded modules on page boundaries
 .set MEMINFO,  1<<1             # provide memory map
-.set FLAGS,    ALIGN | MEMINFO  # this is the Multiboot 'flag' field
+.set VIDINFO,  1 << 2
+.set FLAGS,    ALIGN | MEMINFO | VIDINFO  # this is the Multiboot 'flag' field
 .set MAGIC,    0x1BADB002       # 'magic number' lets bootloader find the header
 .set CHECKSUM, -(MAGIC + FLAGS) # checksum of above, to prove we are multiboot
 
@@ -11,7 +12,13 @@
 .long MAGIC
 .long FLAGS
 .long CHECKSUM
-
+.long 0
+.long 0
+.long 0
+.long 0
+.long 0
+.long 1 # 0 = graphics mode; 1 = text mode
+.long 0, 0, 0 # Width, height, depth
 # Reserve a stack for the initial thread.
 .section .bootstrap_stack, "aw", @nobits
 stack_bottom:
@@ -23,6 +30,7 @@ stack_top:
 .global _start
 .type _start, @function
 _start:
+	
 	movl $stack_top, %esp
 
 	# Initialize the core kernel before running the global constructors.

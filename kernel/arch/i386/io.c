@@ -43,18 +43,41 @@ char ask_cmos(char reg){outb(0x70,reg);return inb(0x71);}
 //memcpy(scancode,s,sizeof(s));
 //  \x1A\x32\x3334567890-=\x1A\x1Aqwertyuiop[]\n sdfghjkl     zxcvbnm,./ ";
 //char* s(char v){char* b = {&v,'\0'};return b;}
-char getScancode()
+Scancode getScancode()
 {
-outb(0x60,0xF4);
-char c=0;
-do {
-if(inb(0x60)!=c)
-{
-c=inb(0x60);
-if(c>0)
-return c;
-}
-}while(1);
+  static char shift = 0;
+  static char last = 0;
+  //outb(0x60,0xF4);
+  //outb(0x20, 0x20);
+  char c=0;
+  Scancode s = {.code = 3};
+  while (1) {
+    if(inb(0x60)!=c)
+      {
+	c=inb(0x60);
+	if(c<0)//key not pressed!
+	{
+	  switch (c+128)
+	  {
+	  case SHIFT: shift = 0;break;
+	  default:
+	    if (c+128==last) last = 0; //Key was released!
+	  }
+	}
+	if(c>0&&c!=last)
+	{
+	  switch (c)
+	  {
+	  case SHIFT: shift = 1; break;
+     	  default:
+	    last = c;
+	    s.code = c;
+	    s.Shift = shift;
+	    return s;
+	  }
+	}  
+      }
+  }
 }
 void reboot()
 {
@@ -67,15 +90,19 @@ void reboot()
 
 const char scancode[] = {
 	BADCHAR,BADCHAR,
-	'1','2','3','4','5','6','7','8','9','0','-','=',
-	'\b','\t',
-	'q','w','e','r','t','y','u','i','o','p','[',']','\n',
-	BADCHAR,
-	'a','s','d','f','g','h','j','k','l',';','\'',BADCHAR,BADCHAR,'#',
-	'z','x','c','v','b','n','m',',','.','/',BADCHAR,BADCHAR,BADCHAR,' ',
-BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR,BADCHAR
+	'1','2','3','4','5','6','7','8','9','0','-','=','\b',
+	'\t','q','w','e','r','t','y','u','i','o','p','[',']','\n',
+	BADCHAR,'a','s','d','f','g','h','j','k','l',';','\'',BADCHAR,BADCHAR,'#',
+	'z','x','c','v','b','n','m',',','.','/',BADCHAR,BADCHAR,BADCHAR,' '
 };
-
+const char scancode_shift[] = {
+  BADCHAR,BADCHAR,
+  '!','"',156,'$','%','^','&','*','(',')','_','+',BADCHAR,
+  BADCHAR,'Q','W','E','R','T','Y','U','I','O','P','{','}',BADCHAR,
+  BADCHAR,'A','S','D','F','G','H','J','J','K','L',':',BADCHAR,BADCHAR,'@',
+  'Z','X','C','V','B','N','M','<','>','?'
+  
+};
  uint16_t pciConfigReadWord (uint8_t bus, uint8_t slot,
                              uint8_t func, uint8_t offset)
  {

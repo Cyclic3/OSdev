@@ -3,6 +3,44 @@
 #include <kernel/tty.h>
 #include <stdio.h>
 #include <limits.h>
+AHCI_IDENTIFY * identify_disk(HBA_PORT *port, AHCI_IDENTIFY * id)
+{
+  port->is = (unsigned int)-1;		// Clear pending interrupt bits
+  int slot = find_cmdslot(port);
+  HBA_CMD_HEADER *cmdheader = (HBA_CMD_HEADER*)port->clb;
+  cmdheader += slot;
+  cmdheader->cfl = sizeof(FIS_REG_H2D)/sizeof(unsigned int);
+  cmdheader->w = 0;
+  cmdheader->prdtl = 1;
+  cmdheader->p = 1;
+  cmdheader->c = 1;
+  HBA_CMD_TBL *cmdtbl = (HBA_CMD_TBL*)(cmdheader->ctba);
+  cmdtbl->prdt_entry[0].dba = id;
+  cmdtbl->prdt_entry[0].dbc = 0x1FF;
+  cmdtbl->prdt_entry[0].i = 1;
+  
+  FIS_REG_H2D * fis = cmdtbl->cfis;
+  memset(fis, 0, sizeof(FIS_REG_H2D));
+  fis->fis_type = FIS_TYPE_REG_H2D;
+  fis->command = ATA_CMD_IDENTIFY;	// 0xEC
+  fis->device = 0;			// Master device
+  fis->c = 1;				// Write command register
+  
+  //Send the command
+  port->ci=1;
+
+  /***Wait for a reply***/
+  while(1)
+  {
+    if(port->ci == 0)
+    {
+      break;
+    }
+    
+  }
+  return 0;
+}
+
 HBA_MEM * PCI2HBA(struct pci_device dev) {return (HBA_MEM *) pciConfigReadReg(dev.bus,dev.device,dev.function,HBA_MEM_PCI_OFFSET);}
 unsigned char get_abar(){
     int j = n_devices-1;
@@ -252,8 +290,9 @@ unsigned char write(HBA_PORT *port, unsigned int startl, unsigned int starth, un
 	cmdheader += slot;
 	cmdheader->cfl = sizeof(FIS_REG_H2D)/sizeof(unsigned int);	// Command FIS size
 	cmdheader->w = 1;		// Write to device
+	cmdheader->c = 1;		// Write to device
+	cmdheader->p = 1;		// Write to device
 	cmdheader->prdtl = (unsigned short)((count-1)>>4) + 1;	// PRDT entries count
- 
 	HBA_CMD_TBL *cmdtbl = (HBA_CMD_TBL*)(cmdheader->ctba);
 	memset(cmdtbl, 0, sizeof(HBA_CMD_TBL) +
  		(cmdheader->prdtl-1)*sizeof(HBA_PRDT_ENTRY));
@@ -263,7 +302,7 @@ unsigned char write(HBA_PORT *port, unsigned int startl, unsigned int starth, un
 	{
 		cmdtbl->prdt_entry[i].dba = (unsigned int)buf;
 		cmdtbl->prdt_entry[i].dbc = 8*1024;	// 8K bytes
-		cmdtbl->prdt_entry[i].i = 1;
+		cmdtbl->prdt_entry[i].i = 0;
 		buf += 4*1024;	// 4K words
 		count -= 16;	// 16 sectors
 	}
