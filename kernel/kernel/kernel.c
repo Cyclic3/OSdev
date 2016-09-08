@@ -14,6 +14,8 @@
 
 #include <kernel/cpu.h>
 
+#include <kernel/interrupts.h>
+
 const char vv[] = "0123456789abcdef";
 unsigned char IDT_TABLE[256*8];
 unsigned char GDT_TABLE[4*8];
@@ -471,7 +473,7 @@ void kernel_main(void)
     DescriptorPointer gdt = {.length = 3*8,.ptr = GDT_TABLE};
     IDT descr =
       {
-	.offset = test_loc,
+	.offset = (size_t)KernelCallIRQ,
 	.selector = 0x8,
 	.type_attr = IDT_STDINT|0b10000000
       };
@@ -484,8 +486,6 @@ void kernel_main(void)
       {.base=0,.limit=0xFFFFFFFF,.type={.byte = 0x92}}
     };
     WriteAllGDT(GDT_TABLE,gdt_tab,3);
-    dump(GDT_TABLE);
-    puts("Adding IRQ Redirect");
     /*RedirectionEntry red =
       {
 	.vector=0x50
@@ -495,8 +495,11 @@ void kernel_main(void)
     LoadGDT(gdt);
     puts("Done!");
     puts("Int 0x80");
-    readline(v,0,256);
-    asm("cli;INT $0x80");
+    //readline(v,0,256);
+    char * name = "ABCDEFG";
+    CallKernel(name,10,16);
+    //asm("INT $0x80");
+    //asm("INT $0x80");
     /*
       The system is now up and running! This is good.
       So now we have to transfer execution to another bit of memory
@@ -509,7 +512,6 @@ void kernel_main(void)
     asm volatile(""::"a"(test));
     asm volatile("jmp %eax");
     puts("=(");
-    return 0;
 }
 
 

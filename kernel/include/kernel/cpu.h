@@ -1,3 +1,5 @@
+#ifndef _KERNEL_CPU_H
+#define _KERNEL_CPU_H
 /* Vendor-strings. */
 #define CPUID_VENDOR_OLDAMD       "AMDisbetter!" //early engineering samples of AMD K5 processor
 #define CPUID_VENDOR_AMD          "AuthenticAMD"
@@ -271,3 +273,4 @@ void AddRedirectionEntry(RedirectionEntry red, unsigned int vector)
     while (ReadLocalApic(APIC_ICRL) & ICR_SEND_PENDING);
 }
 */
+#endif
