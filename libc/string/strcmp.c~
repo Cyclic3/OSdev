@@ -1,9 +1,0 @@
-#include <string.h>
-int strcmp(char *lhs, char *rhs)
-{
-  while(*lhs)
-  {
-    if (*lhs!=*rhs) return *lhs-*rhs;
-    lhs++;rhs++
-  }
-}

@@ -30,20 +30,22 @@ stack_top:
 .global _start
 .type _start, @function
 _start:
-	
+	# Set the stack pos
 	movl $stack_top, %esp
-
+    movl $stack_top, %ebp
 	# Initialize the core kernel before running the global constructors.
 	call kernel_early
 
 	# Call the global constructors.
 	call _init
-
+    
 	# Transfer control to the main kernel.
 	call kernel_main
 
-	# Hang if kernel_main unexpectedly returns.
-	cli
+    #call if kernel_main decides to stop
+    call kernel_ret
+
+    cli
 .Lhang:
 	hlt
 	jmp .Lhang
