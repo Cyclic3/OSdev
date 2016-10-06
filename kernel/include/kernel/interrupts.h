@@ -30,7 +30,7 @@ void PopAll()
 void stackdump()
 {
     //this function will screw everything up, but that won't matter
-    int esp,ebp;
+    int esp,ebp = 0;
     asm("mov %%esp,%0;mov %%ebp,%1"::"r"(esp),"r"(ebp));
     dump(esp,ebp);
 }
@@ -46,7 +46,6 @@ void volatile CallKernel(KernelCall * v)
 {
     asm(""::"a"(v));
     asm("int $0x80;");
-    PopAll();
     return;
 }
 //void volatile KernelCallIRQ();
