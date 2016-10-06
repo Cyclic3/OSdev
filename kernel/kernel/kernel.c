@@ -42,7 +42,7 @@ char* hexdump(unsigned int v, char vvv[9])
 
 
 void halt(){asm volatile ("hlt");}
-void failwith(char * err){printf("KERNEL FAILURE: %s",err);halt();}
+void failwith(char * err){printf("KERNEL FAILURE: %s\nPress any key to reboot.",err);readcode();reboot();}
 void kernel_early(void)
 {
     outb(0x3D4, 0x0F);
@@ -119,155 +119,25 @@ int atoi(char *p)
      }
     return k;
 }
-void dump(unsigned char * p)
+void dump(unsigned char * p, unsigned char * stop)
 {
     unsigned int lines = 0;
-    char vvv[9];
     unsigned char * p1 = p;
     printf("\t0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f\n");
-    while(1)
+    while(p < stop)
     {
     	//if (lines == 25){terminal_initialise();lines = 0;}
     	char * j = p;
-    	printf("%x",(size_t)p-(size_t)p1);
+    	printf("%x",(size_t)p);
     	printf("\t");
 	for (int i = 0;i < 16;i++) {unsigned char v = *p;printf("%c%c ",vv[v/16],vv[v%16]);p++;}
-    	printf("\t\t");
+    	printf("\t");
       	for (int i = 0;i < 16;i++) {printf("%c",*(j++));}
 	puts("");
     	lines++;
 	if(readchar()=='\n') return;
     }
-}	/*
-	puts(itoa(readchar(),v,10));
-	printf ("TTL: ");
-	char* tt = readline(v,1);
-	int t = atoi(tt);
-	puts(tt);
-	puts(itoa(t,v,10));
-	struct time init = get_time();
-	struct time add = {.seconds=t};
-	struct time stop = add_time(init,add);
-	printf("Halting at: ");
-	print_time(stop);
-	printf("\n");
-	char s = ask_cmos(0x00);
-	while(1){
-		//terminal_initialize();        
-        s = ask_cmos(0x00);
-		clearline();
-        struct time now = get_time();
-        print_time(now);
-        if (equal_time(now,stop)) break;
-		while(ask_cmos(0x00)==s);
-	}
-	terminal_initialise();
-	puts("GOING DOWN NOW!");
-	puts("But first, because it looks cool, we shall dump memory!");
-	char vvv[9] = "000000000";
-	unsigned char * p = 0x10000000;
-	puts(p);
-	puts(hexdump(&p,vvv));
-	puts(hexdump(*vvv,vvv));
-	terminal_initialise();
-	while(1)
-	{
-    	//if (lines == 25){terminal_initialise();lines = 0;}
-    	readcode();
-    	unsigned int * j = p;
-    	printf(hexdump((p),vvv));
-    	printf("\t");
-    	printf(hexdump(*p,vvv));p++;p++;p++;p++;
-    	printf(hexdump(*p,vvv));p++;p++;p++;p++;
-    	printf(hexdump(*p,vvv));p++;p++;p++;p++;
-    	printf(hexdump(*p,vvv));p++;p++;p++;p++;
-    	printf("\t\t");
-    	terminal_putchar(*j);j++;
-    	terminal_putchar(*j);j++;
-    	terminal_putchar(*j);j++;
-    	terminal_putchar(*j);j++;
-    	terminal_putchar(*j);j++;
-    	terminal_putchar(*j);j++;
-    	terminal_putchar(*j);j++;
-    	terminal_putchar(*j);j++;
-    	terminal_putchar(*j);j++;
-    	terminal_putchar(*j);j++;
-    	terminal_putchar(*j);j++;
-    	terminal_putchar(*j);j++;
-    	terminal_putchar(*j);j++;
-    	terminal_putchar(*j);j++;
-    	terminal_putchar(*j);j++;
-    	terminal_putchar(*j);j++;
-    	puts("");
-    	lines++;
-    }
-char* v;
-    printf("CLOCKOS\n");
-    readcode();
-    char vvv[9] = "000000000";
-    readcode();
-    puts("DISKIO");
-    readcode();
-    halt();
-    struct pci_device dev[8192];
-    int i = pciEnumAll(dev);
-    for (;i<0;i--) {printf(hexdump(dev[i].bus,vvv));printf(":");puts(hexdump(dev[i].device,vvv));};
-    return;
-    //while(1){char vv = ; if(vv!=x){io_wait();terminal_putchar(scancode[vv]);}}//printf(" ");puts(itoa(vv,v));};}x=vv	
-*/
-/*
-{
-        char v[9] = {0,0,0,0,0,0,0,0,0};
-        printf(hexdump(sizeof(HBA_MEM),v));
-    }
-    puts("DISK IO");
-    char vvv[9] = "000000000";
-    struct pci_device d[32];
-    int i = pciEnumAll(d);
-    puts("DONE!");
-    printf("Got ");
-    printf(hexdump(i,vvv));
-    puts(" devices.");
-    puts("Select device:");
-    puts("N\tBus\t\tDevice\tType\tVendor\tFunction");
-    for (int j = i-1;j>=0;j--)
-    {
-        printf(hexdump(j,vvv)+7);printf("\t");
-        printf(hexdump(d[j].bus,vvv)+4);printf("\t");
-	printf(hexdump(d[j].device,vvv)+4);printf("\t");
-	printf(hexdump(d[j].class,vvv)+4);printf("\t");
-	printf(hexdump(d[j].vendor,vvv)+4);printf("\t");
-	printf(hexdump(d[j].function,vvv)+4);printf("\t");
-	puts("");
-    };
-    int c = readchar();
-    puts(hexdump(c-'0',vvv));
-    struct pci_device dev = d[c-'0'];
-    FIS_REG_H2D * fis;
-    memset(fis, 0, sizeof(FIS_REG_H2D));
-    fis->fis_type = FIS_TYPE_REG_H2D;
-    fis->command = 0xEC;	// 0xEC
-    fis->device = 0;			// Master device
-    fis->c = 1;				// Write command register
-    printf("Selected ");
-    puts(hexdump(((unsigned int) dev.bus<<16|(unsigned int) dev.device<<8|(unsigned int) dev.function << 8),vvv)+2);
-    
-    HBA_MEM * m = PCI2HBA(dev);
-    //dump(pciConfigReadReg(dev.bus,dev.device,dev.function,HBA_MEM_PCI_OFFSET));
-    //unsigned char read(HBA_PORT *port, unsigned int startl, unsigned int starth, unsigned int count, unsigned short *buf);
-    puts("enum");
-    int v[32];
-    enumerateHBA_MEM(m,v);
-    printf("Dev: ");
-    c = readchar();
-    puts(&c);
-    HBA_PORT * port = (m->ports)+(sizeof(HBA_PORT)*(c-'0'));
-    unsigned short* b = 133769;
-    unsigned char r = read(port,1,1,16,b);
-    puts ("DONE");
-    puts(hexdump(r,vvv));
-    dump(133769);
-*/
+}
 static unsigned int crc32tab[] = { /* CRC polynomial 0xedb88320 */
   0x00000000, 0x77073096, 0xee0e612c, 0x990951ba, 0x076dc419, 0x706af48f,
   0xe963a535, 0x9e6495a3, 0x0edb8832, 0x79dcb8a4, 0xe0d5e91e, 0x97d2d988,
@@ -456,152 +326,62 @@ void encodeGdtEntry(uint8_t target[8], GDT source)
     // And... Type
     target[5] = source.type.byte;
 }
-void test(){puts("hi");}
-size_t test_loc = (size_t) test;
-//{0x0F,0xC6,0x3D,0xAF,0x84,0x83,0x47,0x72,0x8E,0x79,0x3D,0x69,0xD8,0x47,0x7D,0xE4}
+IDT new_IDT(void * function)
+{
+    IDT idt =
+    {
+        .offset = function,
+        .selector=0x8,
+        .type_attr = IDT_STDINT|0b10000000
+    };
+    return idt;
+}
+void fault_double() {failwith("Double Fault");}
+void fault_div0()   {failwith("Division by 0");}
+void fault_debug()  {failwith("Debug");}
+void fault_nmi()    {failwith("Non-maskable interrupt");}
+void fault_snp()    {failwith("Segment not present");}
+void fault_over()   {failwith("Overflow");}
+void fault_gpf()    {
+    printf("GPF\n");
+    failwith("General protection fault");
+}
 void kernel_main(void)
 {
     real_mode();
-    printf("%x\n",test_loc);
-    printf("%i",sizeof(DescriptorPointer));
     char v[256];
-    //unsigned char* apic = InitApic();
-    //if (!check_apic) {clear();puts("NO APIC! Halting!");}
-    //printf("%i\n",apic);
     puts("Loading new IDT and gdt");
     DescriptorPointer idt = {.length = 0x800,.ptr = IDT_TABLE};
     DescriptorPointer gdt = {.length = 3*8,.ptr = GDT_TABLE};
-    IDT descr =
-      {
-	.offset = (size_t)KernelCallIRQ,
-	.selector = 0x8,
-	.type_attr = IDT_STDINT|0b10000000
-      };
-    WriteAtIDT(IDT_TABLE,descr,0x80);
-    //    WriteAtIDT(IDT_TABLE,descr,0x1);
+    WriteAtIDT(IDT_TABLE,new_IDT(KernelCallIRQ),0x80);
+    WriteAtIDT(IDT_TABLE,new_IDT(fault_div0),0x0);
+    WriteAtIDT(IDT_TABLE,new_IDT(fault_snp),0xB);
+    WriteAtIDT(IDT_TABLE,new_IDT(fault_gpf),0xD);
+    WriteAtIDT(IDT_TABLE,new_IDT(fault_double),0x8);
+    WriteAtIDT(IDT_TABLE,new_IDT(fault_over),0x4);
     GDT gdt_tab[] =
     {
-      {.base=0,.limit=0,.type={.byte=0}},
+      {.base=0,.limit=0,.type={.byte=0x92}},
       {.base=0,.limit=0xFFFFFFFF,.type={.byte=0x9A}},
       {.base=0,.limit=0xFFFFFFFF,.type={.byte = 0x92}}
     };
     WriteAllGDT(GDT_TABLE,gdt_tab,3);
-    /*RedirectionEntry red =
-      {
-	.vector=0x50
-	};*/
-    //addIRQRed(apic,0,&red);
     LoadIDT(idt);
     LoadGDT(gdt);
     puts("Done!");
     puts("Int 0x80");
-    //readline(v,0,256);
-    char * name = "ABCDEFG";
-    CallKernel(name,10,16);
-    //asm("INT $0x80");
-    //asm("INT $0x80");
-    /*
-      The system is now up and running! This is good.
-      So now we have to transfer execution to another bit of memory
-      Since this is the basis of an operating system, it is easy and there is a immediate value based instruction!
-
-      
-      JK
-    */
-    puts("Here we go!");
-    asm volatile(""::"a"(test));
-    asm volatile("jmp %eax");
-    puts("=(");
+    void **args = {"Hello!"};
+    char * name = "puts";
+    KernelCall call =
+        {
+            .function_name = name,
+            .n_args = 1,
+            .args = args
+        };
+    //asm("push 0x69686968");
+    CallKernel(&call);
+    puts("yolo");
+    return;
 }
 
-
-/*
-    if (get_abar()) {puts("No AHCI device. Halting!");halt();}
-    puts("found abar");
-    char v[13]="????????????";
-    printf ("Running on a %s processor\n", get_vendor(v));
-    int ports[32];
-    probe_port(ports);
-    puts("Init disk!");
-    HBA_PORT * port = &abar->ports[0];
-    //Get the identify data
-    puts("ident");
-    AHCI_IDENTIFY id;
-    identify_disk(port, &id);
-    unsigned long long sectors;
-    memcpy(&sectors,id.total_usr_sectors,3);
-    printf("The disk has %i total sectors\n",sectors);
-    char * h = "h";
-  */
-
-/*
-    char* a = "a\0b";
-    //Create the MBR header
-    MBR_HEAD mbr_head = {.id={10,0,0,0,0,0,0,0,0,0},.sig = MBR_SIG};
-    //Create the MBR partion
-    MBR_PART mbr_part =
-      {
-	.status = 0x00,
-	.type = 0xEE,
-	.LBA = 1,
-	.start = BAD_CHS,
-	.end = BAD_CHS,
-	.sectors = (unsigned int)sectors
-      };
-    //Put the MBR partition in the MBR header
-    memcpy(&mbr_head.parts,&mbr_part,0x10);
-    //Write the mbr header to disk
-    write(port,0,0,1,&mbr_head);
-    //Create the GPT header:
-    GPT_HEAD gpt_head =
-      {
-	.sig = EFI_SIG,
-	.rev = EFI_REV,
-	.size = GPT_SIZE,
-	.this = 1,
-	.backup = (unsigned int)sectors-16,
-	.first = 3,
-	.last = (unsigned int)sectors-16,
-	.guid = {1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6},
-	.part_start = 2,
-	.part_num = 4,
-	.part_ent_size = 0x80
-      };
-    GPT_PART gpt_part1 =
-      {
-	.type_guid = {0x43, 0x79, 0x63, 0x6c, 0x69, 0x63, 0x4f, 0x53, 0x20, 0x50, 0x61, 0x72, 0x74, 0x0, 0x0, 0x0},
-	.part_guid = {0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6},
-	.first = 18,
-	.last = 1024,
-      };
-    atou16(gpt_part1.name,"CyclicOS partition");
-    //Create the GPT partition table
-    GPT_PART parts[4];
-    //Put the GPT partition into the table
-    memcpy(parts,&gpt_part1,0x80);
-    //memcpy(&parts[1],&gpt_part2,0x80);
-    //Write the GPT partition table to disk
-    write(port,2,0,1,parts);
-    gen_part_crc(&gpt_head, &parts);
-    gen_crc(&gpt_head);
-    //Write the GPT header to disk
-    write(port,gpt_head.this,0,1,&gpt_head);
-    dump(&gpt_part1);
-    /*
-    //Crete the GPT backup header
-    GPT_HEAD gpt_head_backup =
-      {
-	.sig = EFI_SIG,
-	.rev = EFI_REV,
-	.size = GPT_SIZE,
-	.this = (unsigned int)sectors-16,
-	.backup = 1,
-	.first = 3,
-	.last = 8,
-	.part_start = 2,
-	.part_num = 4,
-	.part_ent_size = 0x80
-      };
-    //Write the GPT backup header to disk
-    write(port,gpt_head.backup,0,0x200,&gpt_head);
-    */
+void kernel_ret() {failwith("Kernel returned");}

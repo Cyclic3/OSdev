@@ -1,23 +1,78 @@
 #include <kernel/cpu.h>
-void CallKernel(char* function_name,unsigned int n_args,void** args)
+typedef struct 
 {
-    //TODO: address translation
-    //asm("push %0"::"r"((size_t)function_name));
-    asm("push %0"::"r"(n_args));
-    //asm("push %0"::"r"(args));
-    asm("int $0x80");
-}
-void KernelCallIRQ()
-{
-    asm("cli");
-    asm("pop");
-    char* function_name;
+    char * function_name;
     unsigned int n_args;
-    size_t args;
-    //asm volatile ("pop %0":"=r"(function_name));
-    asm volatile ("pop %0":"=r"(n_args));
-    //;pop %1;pop %0":"=r"(function_name),"=r"(n_args),"=r"(args));
-    printf("%x",n_args);
-    //;pop %1;pop %2","=X"(n_args),"=X"(args));
-    //I know the code above is evil, but it is the best that can be done.
+    void ** args;;
+}KernelCall;
+void PushAll()
+{
+    asm("push %eax");
+    asm("push %ecx");
+    asm("push %edx");
+    asm("push %ebx");
+    //asm("push %esp");
+    //    asm("push %ebp");
+    //    asm("push %esi");
+    //    asm("push %edi");
+}
+void PopAll()
+{
+    //    asm("pop %edi");
+    //asm("pop %esi");
+    //    asm("pop %ebp");
+    //    asm("pop %esp");
+    asm("pop %ebx");
+    asm("pop %edx");
+    asm("pop %ecx");
+    asm("pop %eax");
+}
+void stackdump()
+{
+    //this function will screw everything up, but that won't matter
+    int esp,ebp;
+    asm("mov %%esp,%0;mov %%ebp,%1"::"r"(esp),"r"(ebp));
+    dump(esp,ebp);
+}
+size_t get_eip();
+asm(
+    "get_eip:"
+    "pop %eax;"
+    "push %eax;"
+    "push %eax;"
+    "ret"
+    );
+void volatile CallKernel(KernelCall * v)
+{
+    asm(""::"a"(v));
+    asm("int $0x80;");
+    PopAll();
+    return;
+}
+//void volatile KernelCallIRQ();
+void volatile KernelCallIRQ();
+asm(
+  "KernelCallIRQ:;"
+      "call KernelCallIRQ_2;"
+    "ret;"
+  ";"
+    );
+void LOL() {puts("LOL");}
+void volatile KernelCallIRQ_2()
+{
+    
+    size_t v1;
+    asm("mov %%eax,%0":"=b"(v1));
+    KernelCall * v = (KernelCall *) v1;
+    unsigned char inline check(char * name,unsigned int n_args)
+    {
+        return (!strcmp(v->function_name,name))&&(v->n_args==n_args);
+    }
+    if (check("puts",1))
+    {
+        puts((v->args));
+    }
+    else{puts("Bad kernel call");}
+    puts("ret");
+    return;
 }
