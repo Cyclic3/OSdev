@@ -1,5 +1,6 @@
 //https://en.wikibooks.org/wiki/C_Programming/C_Reference/stdlib.h/itoa
 /* reverse:  reverse string s in place */
+#include <string.h>
 void reverse(char s[])
 {
     int i, j;

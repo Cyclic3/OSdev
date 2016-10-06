@@ -1,3 +1,4 @@
+#include "reverse.c"
 char* itoa(int num, char* str, int base)
 {
     int i = 0;

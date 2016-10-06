@@ -1,5 +1,6 @@
 #include <string.h>
-
+#ifndef STRLEN_H
+#define STRLEN_H
 size_t strlen(const char* string)
 {
 	size_t result = 0;
@@ -7,3 +8,4 @@ size_t strlen(const char* string)
 		result++;
 	return result;
 }
+#endif
